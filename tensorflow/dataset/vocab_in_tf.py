@@ -11,7 +11,7 @@ from typing import Counter
 from tensorflow_text.tools.wordpiece_vocab.wordpiece_tokenizer_learner_lib import learn
 
 sys.path.append('/home/luser/repos/ContextBERT')
-from util.patent_loader import load_documents_from_file, process_docs
+from util.patent_loader import load_documents_from_file, process_docs, get_list_of_files
 
 
 def count_words_in_files(input_path, output_path, prob=None):
