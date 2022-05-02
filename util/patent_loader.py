@@ -5,7 +5,8 @@ from math import ceil
 from collections import Counter
 from random import shuffle
 import os
-
+import gzip
+from datetime import datetime
 
 rep_multispaces = re.compile(r'\s+')
 rep_punct = re.compile(r'[><,:{})(;"`\'\"=—_/\\\+\[\]]')
@@ -131,12 +132,48 @@ def get_list_of_files(dir_name, randomize = True):
 
     return files
 
+def create_training_files(input_path, output_path, compress=True, max_files = None, overwrite = False):
+
+    # get files
+    files = get_list_of_files(input_path)
+    if max_files:
+        files = files[:max_files]
+
+
+    for i, file in enumerate(files):
+
+        if compress:
+            out_file = os.path.join(output_path, str(os.path.split(os.path.splitext(file)[0])[1])+".txt.gz")
+        else:
+            out_file = os.path.join(output_path, str(os.path.split(os.path.splitext(file)[0])[1])+".txt")
+        if overwrite or not os.path.exists(out_file):
+            t = datetime.now()
+            with open(file, "r", encoding='utf-8') as f:
+                print(f"processing file {file}, {i+1}/{len(files)}")            
+                docs = load_documents_from_file(f.read())
+                docs = process_docs(docs, max_length=None, context = True, debug=False)
+            
+            if compress:
+                out_file = os.path.join(output_path, str(os.path.split(os.path.splitext(file)[0])[1])+".txt.gz")
+            else:
+                out_file = os.path.join(output_path, str(os.path.split(os.path.splitext(file)[0])[1])+".txt")
+            print(f"writing to file {out_file}")
+
+            # save to output
+            with gzip.open(out_file,'wt') if compress else open(out_file,'w') as f:
+                for doc in docs:
+                    f.write(f"{doc['class']}|{doc['text']}\n")
+            print(f"time {datetime.now()-t}")
+
+        else:
+            print(f"output file {out_file} already exists, {i+1}/{len(files)}")            
+
+
+
 
 if __name__ == '__main__':
 
-    with open('/mnt/txt_base/files/ipa140710.json','r') as f:
-
-        docs = load_documents_from_file(f.read())
-        process_docs(docs, max_length=20, debug = True)      
-
+    input_path = '/mnt/txt_base/files/'
+    output_path = '/mnt/corpus_files/'
+    create_training_files(input_path, output_path, compress=True)
   

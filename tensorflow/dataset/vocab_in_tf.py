@@ -112,7 +112,7 @@ if __name__ == "__main__":
         pickle.dump(wp_vocab,f)
     
     with open('/home/luser/data/patent/model/wp_vocab.txt', 'w') as f:
-        for t in wp_vocab:
-            f.write(t+"\n")
+        for i, t in enumerate(wp_vocab):
+            f.write(f'"{t}":{i}\n')
 
 
