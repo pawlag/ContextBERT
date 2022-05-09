@@ -6,27 +6,23 @@ from util.patent_loader import load_documents_from_file, process_docs, measure_f
 import os
 
 
-
 class MultifileDataset(Dataset):
-    def __init__(self, corpus_path, vocab, max_seq_len, max_tokens_len, min_seq_len, corpus_lines =0, context=False, context_dict=None, encoding = 'utf-8'):
+    def __init__(self, corpus_path, vocab, max_seq_len, max_tokens_len, min_seq_len, corpus_lines =0, context=False, context_vocab=None):
         self.vocab      = vocab        
         self.max_seq_len    = max_seq_len
         self.max_tokens_len = max_tokens_len
         self.min_seq_len    = min_seq_len
         self.context    = context
-        self.context_dict = context_dict
+        self.context_vocab = context_vocab
         
         self.corpus_lines   = corpus_lines
         self.corpus_path    = corpus_path
-        self.encoding = encoding
-
-
-        # check if corpus_path is a dir
         
+
         # count lines in corpus_lines == 0
         if self.corpus_lines == 0:
             _, self.corpus_lines = measure_files(self.corpus_path, self.min_seq_len, self.max_seq_len)
-            print(f" number of lines: {self.corpus_lines}")
+            print(f"total number of lines: {self.corpus_lines}")
 
     def __len__(self):
         return self.corpus_lines
@@ -40,7 +36,7 @@ class MultifileDataset(Dataset):
         subl_encoded = self.vocab.tokenizer.encode(subl, is_pretokenized=True)
         
         # apply random mask and tokens switch and convert words to tokens ids
-        ids_random, ids_label = self.mask_switch_tokens(subl_encoded, subl)  
+        ids_random, ids_label = self.perturbate_tokens(subl_encoded, subl)  
 
         # truncate ids lists if too long
         ids_random = ids_random[:self.max_tokens_len]
@@ -54,10 +50,11 @@ class MultifileDataset(Dataset):
         output = {"bert_input": ids_random,
                   "bert_label": ids_label}
 
+        
         if self.context:
-            bert_context = [self.context_dict.stoi.get(context, self.context_dict.unk_index)]*len(ids_random)             
-            c_padding = [self.context_dict.pad_index]*len(padding) 
-            bert_context.extend(padding)
+            bert_context = [self.context_vocab.stoi.get(context, self.context_vocab.unk_index)]*len(ids_random)             
+            c_padding = [self.context_vocab.pad_index]*len(padding) 
+            bert_context.extend(c_padding)
             output["bert_context"]=bert_context
 
         return {key: torch.tensor(value) for key, value in output.items()}
@@ -66,7 +63,6 @@ class MultifileDataset(Dataset):
         
         output_random = seq_encoded.ids
         output_label = seq_encoded.ids
-
 
         # iter through words in seq
         for i in range(len(seq)):
@@ -90,15 +86,12 @@ class MultifileDataset(Dataset):
 
         return output_random, output_label
 
-
-
-
 class BERTDataset(Dataset):
-    def __init__(self, corpus_path, vocab, seq_len, context=False, context_dict=None, encoding="utf-8", corpus_lines=None, on_memory=True):
+    def __init__(self, corpus_path, vocab, seq_len, context=False, context_vocab=None, encoding="utf-8", corpus_lines=None, on_memory=True):
         self.vocab      = vocab        
         self.seq_len    = seq_len
         self.context    = context
-        self.context_dict = context_dict
+        self.context_vocab = context_vocab
 
         self.on_memory      = on_memory
         self.corpus_lines   = corpus_lines
@@ -158,9 +151,9 @@ class BERTDataset(Dataset):
                   "bert_label": bert_label}
 
         if self.context:
-            bert_context = [self.context_dict.pad_index] \
-                        + [self.context_dict.stoi.get(context, self.context_dict.unk_index)]*len(t_random) \
-                        + [self.context_dict.pad_index]
+            bert_context = [self.context_vocab.pad_index] \
+                        + [self.context_vocab.stoi.get(context, self.context_vocab.unk_index)]*len(t_random) \
+                        + [self.context_vocab.pad_index]
             bert_context = bert_context[:self.seq_len]
             padding = [self.vocab.pad_index]* (self.seq_len - len(bert_context))
             bert_context.extend(padding)

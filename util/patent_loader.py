@@ -216,6 +216,8 @@ def measure_files(input_path, min_seq_len, max_seq_len, max_word_len, tokenizer 
 
 def get_next_line_from_files(input_path, min_seq_len, max_seq_len, max_word_len):
 
+    context_right_patter = re.compile(r'[A-Z][0-9]{2}')
+
     for corpus_file in get_list_of_files(input_path):
         with open(corpus_file, "r") as f:
             for line in f:
@@ -224,6 +226,12 @@ def get_next_line_from_files(input_path, min_seq_len, max_seq_len, max_word_len)
                 if len(context_seq) == 2:
 
                     context, seq = context_seq
+
+                    # clean context
+                    context = context[0:3].upper()
+                    # check pattern
+                    if not context_right_patter.match(context):
+                        context='[UNK]'
 
                     # split into words and filter out too long words
                     tokens = [word for word in seq.split() if len(word) <= max_word_len]
