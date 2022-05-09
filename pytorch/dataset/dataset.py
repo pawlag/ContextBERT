@@ -2,7 +2,96 @@ from torch.utils.data import Dataset
 import tqdm
 import torch
 import random
-from ...util.patent_loader import load_documents_from_file, process_docs
+from util.patent_loader import load_documents_from_file, process_docs, measure_files, get_next_line_from_files
+import os
+
+
+
+class MultifileDataset(Dataset):
+    def __init__(self, corpus_path, vocab, max_seq_len, max_tokens_len, min_seq_len, corpus_lines =0, context=False, context_dict=None, encoding = 'utf-8'):
+        self.vocab      = vocab        
+        self.max_seq_len    = max_seq_len
+        self.max_tokens_len = max_tokens_len
+        self.min_seq_len    = min_seq_len
+        self.context    = context
+        self.context_dict = context_dict
+        
+        self.corpus_lines   = corpus_lines
+        self.corpus_path    = corpus_path
+        self.encoding = encoding
+
+
+        # check if corpus_path is a dir
+        
+        # count lines in corpus_lines == 0
+        if self.corpus_lines == 0:
+            _, self.corpus_lines = measure_files(self.corpus_path, self.min_seq_len, self.max_seq_len)
+            print(f" number of lines: {self.corpus_lines}")
+
+    def __len__(self):
+        return self.corpus_lines
+
+    def __getitem__(self, idx):
+
+        # get next context and subline
+        context, subl =  next(get_next_line_from_files(self.corpus_path, self.min_seq_len, self.max_seq_len))
+
+        # tokenize subl
+        subl_encoded = self.vocab.tokenizer.encode(subl, is_pretokenized=True)
+        
+        # apply random mask and tokens switch and convert words to tokens ids
+        ids_random, ids_label = self.mask_switch_tokens(subl_encoded, subl)  
+
+        # truncate ids lists if too long
+        ids_random = ids_random[:self.max_tokens_len]
+        ids_label = ids_label[:self.max_tokens_len]
+
+        pad_idx = self.vocab.tokenizer.token_to_id("[PAD]")
+        padding = [pad_idx]*(self.max_tokens_len - len(ids_random))
+        ids_random.extend(padding)
+        ids_label.extend(padding)
+
+        output = {"bert_input": ids_random,
+                  "bert_label": ids_label}
+
+        if self.context:
+            bert_context = [self.context_dict.stoi.get(context, self.context_dict.unk_index)]*len(ids_random)             
+            c_padding = [self.context_dict.pad_index]*len(padding) 
+            bert_context.extend(padding)
+            output["bert_context"]=bert_context
+
+        return {key: torch.tensor(value) for key, value in output.items()}
+
+    def perturbate_tokens(self, seq_encoded, seq):
+        
+        output_random = seq_encoded.ids
+        output_label = seq_encoded.ids
+
+
+        # iter through words in seq
+        for i in range(len(seq)):
+            prob = random.random()
+
+            # perturbate 15% of word
+            if prob < 0.15:
+                prob /= 0.15
+
+                # 80% randomly change id to mask id for whole word
+                if prob < 0.8:
+                    # get ids span for word
+                    start, stop = seq_encoded.word_to_tokens(i) 
+                    output_random[start:stop] = [self.vocab.tokenizer.token_to_id("[MASK]")]*(stop-start)
+
+                # 10% randomly change token to random token from vocab
+                elif prob < 0.9:
+                    start, stop = seq_encoded.word_to_tokens(i) 
+                    for idx in range(stop-start):
+                        output_random[start+idx] = self.vocab.get_random_ids()
+
+        return output_random, output_label
+
+
+
 
 class BERTDataset(Dataset):
     def __init__(self, corpus_path, vocab, seq_len, context=False, context_dict=None, encoding="utf-8", corpus_lines=None, on_memory=True):
@@ -15,6 +104,11 @@ class BERTDataset(Dataset):
         self.corpus_lines   = corpus_lines
         self.corpus_path    = corpus_path
         self.encoding       = encoding
+
+
+        # sprawdz czy corpus_path to plik czy katalog
+        # jak pliki to pobierz listę plików
+        # ladowanie 
 
         with open(corpus_path, "r", encoding=encoding) as f:
 
@@ -102,32 +196,3 @@ class BERTDataset(Dataset):
                 output_label.append(0)
 
         return tokens, output_label
-
-    # def random_sent(self, index):
-    #     return self.get_corpus_line(index)
-
-    # def get_corpus_line(self, item):
-    #     if self.on_memory:
-    #         return self.lines[item]
-    #     # else:
-    #     #     line = self.file.__next__()
-    #     #     if line is None:
-    #     #         self.file.close()
-    #     #         self.file = open(self.corpus_path, "r", encoding=self.encoding)
-    #     #         line = self.file.__next__()
-
-    #     #     t1, t2 = line[:-1].split("\t")
-    #     #     return t1, t2
-
-    # def get_random_line(self):
-    #     if self.on_memory:
-    #         return self.lines[random.randrange(len(self.lines))][1]
-
-    #     line = self.file.__next__()
-    #     if line is None:
-    #         self.file.close()
-    #         self.file = open(self.corpus_path, "r", encoding=self.encoding)
-    #         for _ in range(random.randint(self.corpus_lines if self.corpus_lines < 1000 else 1000)):
-    #             self.random_file.__next__()
-    #         line = self.random_file.__next__()
-    #     return line[:-1].split("\t")[1]

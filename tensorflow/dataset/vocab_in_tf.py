@@ -60,8 +60,6 @@ def merge_counters(input_path):
 
 
 
-
-
 if __name__ == "__main__":
 
     input_path = '/mnt/txt_base/files/'
@@ -82,8 +80,9 @@ if __name__ == "__main__":
 
     print("total vocab size ",len(counter))
 
+
     # cleaning of preliminary vocab       
-    min_cnt = 100
+    min_cnt = 10
     max_word_len = 50    
 
     words_to_learn = []
@@ -100,10 +99,9 @@ if __name__ == "__main__":
     with open(word_to_learn_f, 'w') as f:
         for word, cnt in words_to_learn:
             f.write(f"{word}\t{cnt}\n")
-    
-    
+        
 
-    wp_vocab = learn(words_to_learn, 50000, reserved_tokens= ['[PAD]', '[UNK]', "[CLS]", "[SEP]", "[MASK]"], max_input_tokens=-1)
+    wp_vocab = learn(words_to_learn, 75000, reserved_tokens= ['[PAD]', '[UNK]', "[CLS]", "[SEP]", "[MASK]"], max_input_tokens=-1)
 
     print("wp vocab size ",len(wp_vocab))
             
@@ -113,6 +111,4 @@ if __name__ == "__main__":
     
     with open('/home/luser/data/patent/model/wp_vocab.txt', 'w') as f:
         for i, t in enumerate(wp_vocab):
-            f.write(f'"{t}":{i}\n')
-
-
+            f.write(f'"{t}":{i},\n')

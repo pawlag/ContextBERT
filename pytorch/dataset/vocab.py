@@ -2,7 +2,7 @@ import pickle
 from xmlrpc.client import boolean
 import tqdm
 from collections import Counter
-from ...util.patent_loader import load_documents_from_file, process_docs
+from util.patent_loader import load_documents_from_file, process_docs
 
 class TorchVocab(object):
     """Defines a vocabulary object that will be used to numericalize a field.

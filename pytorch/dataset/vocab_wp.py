@@ -8,17 +8,16 @@ from tokenizers.pre_tokenizers import Whitespace
 from random import sample, shuffle
 from math import ceil
 
-
-from util.patent_loader import load_documents_from_file, process_docs
+from util.patent_loader import load_documents_from_file, process_docs, get_list_of_files
 
 class WordPieceVocab():
-    """Defines a vocabulary using WordPiece algoritm implementation in Huggingface
+    """Defines a vocabulary using WordPiece algorithm implementation in Huggingface
     """
 
     def __init__(self):
         self.tokenizer = Tokenizer(WordPiece(unk_token='[UNK]'))
         self.tokenizer.pre_tokenizer = Whitespace()
-    
+  
 
     def train(self, 
                 corpus, 
@@ -46,22 +45,7 @@ class WordPieceVocab():
 
         return self.tokenizer.get_vocab_size()
 
-def get_list_of_files(dir_name):
-    # create a list of file and sub directories 
-    # names in the given directory 
-    obj_in_path = os.listdir(dir_name)
-    files = list()
-    # Iterate over all the entries
-    for obj in obj_in_path:
-        # Create full path
-        full_path = os.path.join(dir_name, obj)
-        # If entry is a directory then get the list of files in this directory 
-        if os.path.isdir(full_path):
-            files = files + get_list_of_files(full_path)
-        else:
-            files.append(full_path)
-            
-    return files
+
 
 def process_files_as_generator(files, encoding, prob = None):
 
@@ -101,9 +85,7 @@ def build():
     if os.path.isdir(root_path): # root_path is a dir, process all files in this dir at its subdirectories
         vocab = WordPieceVocab()
         files = get_list_of_files(root_path)
-        shuffle(files)
-        files = files[:args.n_files]        
-        #vocab.train(process_files_as_generator(files, encoding=args.encoding, prob = 0.2))
+        files = files[:args.n_files]                
         vocab.train(process_files_as_generator(files, encoding=args.encoding))
         vocab.save(args.output_path)
     

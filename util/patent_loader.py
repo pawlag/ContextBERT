@@ -170,10 +170,79 @@ def create_training_files(input_path, output_path, compress=True, max_files = No
 
 
 
+def measure_files(input_path, min_seq_len, max_seq_len, max_word_len, tokenizer = None):
+
+    min_line =  max_seq_len
+    max_line = 0
+    max_tokens = 0
+    max_tokens_sequences = None
+    tokens_to_lines_ratio = 0
+    context_counter = Counter()
+    line_counter = 0 
+    for context, line in get_next_line_from_files(input_path, min_seq_len, max_seq_len, max_word_len):
+        context_counter[context]+=1
+        line_counter+=1
+        ll = len(line)
+        if ll > max_line: max_line=ll
+        if ll < min_line: min_line=ll
+
+        if tokenizer:
+            tokenizer_out = tokenizer.encode(line, is_pretokenized=True)
+            l_tokens = len(tokenizer_out.tokens)
+            tokens_to_lines_ratio = (tokens_to_lines_ratio*(line_counter-1) + (l_tokens/ll))/line_counter
+            if  l_tokens > max_tokens:
+                max_tokens = l_tokens
+                max_tokens_sequences = {"line":line, "tokens":tokenizer_out.tokens}
+            
+
+        if line_counter % 1e6 == 0:
+            print("context_counter size: ", len(context_counter))
+            print("line_counter: ", int(line_counter/1e6),"M")            
+            print("min, max line: ", min_line, max_line)
+            print("max tokens: ", max_tokens)
+            print("tokens to lines ratio: ", tokens_to_lines_ratio)
+            #print("max tokens case: ", max_tokens_sequences)
+            #print("line: ", line)
+
+    print("context_counter: ", context_counter)
+    print("context_counter size: ", len(context_counter))
+    print("line_counter: ", int(line_counter/1e6),"M")            
+    print("min, max line: ", min_line, max_line)
+    print("max tokens: ", max_tokens)
+    print("tokens to lines ratio: ", tokens_to_lines_ratio)
+    print("max tokens case: ", max_tokens_sequences)
+
+    return context_counter, line_counter
+
+def get_next_line_from_files(input_path, min_seq_len, max_seq_len, max_word_len):
+
+    for corpus_file in get_list_of_files(input_path):
+        with open(corpus_file, "r") as f:
+            for line in f:
+                # split into context and sequence
+                context_seq = line.split('|')
+                if len(context_seq) == 2:
+
+                    context, seq = context_seq
+
+                    # split into words and filter out too long words
+                    tokens = [word for word in seq.split() if len(word) <= max_word_len]
+                    
+                    n_tokens = len(tokens) 
+                    if n_tokens >= min_seq_len:
+                        n_sublines = int(n_tokens / max_seq_len)
+                        if n_tokens % max_seq_len >= min_seq_len:
+                            n_sublines +=1
+                        for i in range(n_sublines):                            
+                            yield context, tokens[i*max_seq_len : (i+1)*max_seq_len]
+
 
 if __name__ == '__main__':
+    
+    files_path = '/mnt/corpus_files/'    
+    context_counter, line_counter = measure_files(files_path, 3, 20, 50)
+    print(f"context_counter {context_counter}")
+    print(f"line_counter {line_counter}")   
 
-    input_path = '/mnt/txt_base/files/'
-    output_path = '/mnt/corpus_files/'
-    create_training_files(input_path, output_path, compress=True)
+
   
