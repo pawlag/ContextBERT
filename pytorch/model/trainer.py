@@ -5,9 +5,7 @@ from torch.utils.data import DataLoader
 
 from . import BERTLM, BERT, ContextBERT
 from .optim_schedule import ScheduledOptim
-
 import tqdm
-
 from typing import Union
 
 
@@ -16,7 +14,7 @@ class BERTTrainer:
     BERTTrainer makes the pretrained BERT or ContextBERT model for Masked LM training objective.
     """
 
-    def __init__(self, bert: Union[BERT,ContextBERT], 
+    def __init__(self, bert: Union[BERT, ContextBERT], 
                  train_dataloader: DataLoader, test_dataloader: DataLoader = None,                 
                  lr: float = 1e-4, betas=(0.9, 0.999), weight_decay: float = 0.01, warmup_steps=10000,
                  with_cuda: bool = False, cuda_devices=None, log_freq: int = 10):
@@ -44,9 +42,9 @@ class BERTTrainer:
         self.model = BERTLM(bert).to(self.device)
 
         # Distributed GPU training if CUDA can detect more than 1 GPU
-        # if with_cuda and torch.cuda.device_count() > 1:
-        #     print("Using %d GPUS for BERT" % torch.cuda.device_count())
-        #     self.model = nn.DataParallel(self.model, device_ids=cuda_devices)
+        if with_cuda and torch.cuda.device_count() > 1:
+            print("Using %d GPUS for BERT" % torch.cuda.device_count())
+            self.model = nn.DataParallel(self.model, device_ids=cuda_devices)
 
         # Setting the train and test data loader
         self.train_data = train_dataloader

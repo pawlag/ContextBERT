@@ -1,0 +1,35 @@
+corpus:
+    train_dataset: /mnt/corpus_files_sample/
+    test_dataset: null
+    max_seq_len: 20
+    min_seq_len: 3   
+    max_word_len: 50
+    token_len: 25
+    #train_corpus_lines: 5362975950
+    train_corpus_lines: 4529557
+    test_corpus_lines: null
+    vocab_path: /home/luser/data/patent/model/wp_vocab_hybrid_freq10k_75k.json
+context:
+    context_flg: false
+    context_path: /home/luser/data/patent/model/context_vb_fixed.pck
+model:
+
+    hidden: 256
+    context_embedding_size: 128
+    layers: 8
+    attn_heads: 8
+train:
+    batch_size: 64
+    epochs: 10
+    num_workers: 1
+
+    with_cuda: false
+    cuda_devices: null
+optimizer:
+    learning rate: 0.001
+    adam_weight_decay: 0.01
+    adam_beta1: 0.9
+    adam_beta2: 0.999
+output:
+    log_freq: 10
+    output_path: /home/luser/data/patent/model/
