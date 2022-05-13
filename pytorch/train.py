@@ -1,11 +1,18 @@
 import yaml
 import argparse
+from collections import namedtuple
 
 from torch.utils.data import DataLoader
 from model.bert import BERT
 from model.contextual_bert import ContextBERT
 from model.trainer import BERTTrainer
-from data import MultifileDataset, WordPieceVocab, ContextVocab
+from data import MultifileDataset, WordPieceVocab
+from pytorch.data.context_vocab import Vocab
+
+
+
+def to_nametuple(dict_data):
+    return namedtuple("Config", dict_data.keys())(*tuple(map(lambda x: x if not isinstance(x, dict) else to_nametuple(x), dict_data.values())))
 
 
 def train():
@@ -13,95 +20,79 @@ def train():
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", required=True, type=str, help="path to config file")
     args = parser.parse_args()
+
+    # load config
     with open(args.config, "r") as conf_f:
         conf = yaml.safe_load(conf_f.read())
+
+    conf =  to_nametuple(conf)
     print(conf)
 
-    # parser.add_argument("-trt", "--train_dataset", required=True, type=str, help="train dataset for train bert")
-    # parser.add_argument("-tst", "--test_dataset", type=str, default=None, help="test set for evaluate train set")
-    # parser.add_argument("-vp", "--vocab_path", required=True, type=str, help="path of built vocab model for corpus")
-    # parser.add_argument("--max_seq_len", type=int, default=20, help="maximum sequence len")
-    # parser.add_argument("--min_seq_len", type=int, default=3, help="minimum sequence len")
-    # parser.add_argument("--token_len", type=int, default=25, help="maximum tokens len")
-    # parser.add_argument("--corpus_lines", type=int, default=None, help="total number of lines in corpus")
-    
-    # parser.add_argument('--context', action=argparse.BooleanOptionalAction)
-    # parser.add_argument("-cp", "--context_path", type=str, help="path of built vocab model for context")
-
-    # parser.add_argument("-hs", "--hidden", type=int, default=256, help="hidden size of transformer model")
-    # parser.add_argument("-cs", "--context_embedding_size", type=int, default=128, help="size of context embedding")
-    # parser.add_argument("-l", "--layers", type=int, default=8, help="number of layers")
-    # parser.add_argument("-a", "--attn_heads", type=int, default=8, help="number of attention heads")
-
-    # parser.add_argument("-b", "--batch_size", type=int, default=64, help="number of batch_size")
-    # parser.add_argument("-e", "--epochs", type=int, default=10, help="number of epochs")
-    # parser.add_argument("-w", "--num_workers", type=int, default=1, help="dataloader worker size")
-
-    # parser.add_argument("--with_cuda", action=argparse.BooleanOptionalAction, help="training with CUDA ")
-    # parser.add_argument("--cuda_devices", type=int, nargs='+', default=None, help="CUDA device ids")    
-
-    # parser.add_argument("--lr", type=float, default=1e-3, help="learning rate of adam")
-    # parser.add_argument("--adam_weight_decay", type=float, default=0.01, help="weight_decay of adam")
-    # parser.add_argument("--adam_beta1", type=float, default=0.9, help="adam first beta value")
-    # parser.add_argument("--adam_beta2", type=float, default=0.999, help="adam second beta value")
-
-    # parser.add_argument("--log_freq", type=int, default=10, help="printing loss every n iter default is 10")    
-    # parser.add_argument("-o", "--output_path", required=True, type=str, help="output/bert.model")
-    
-
-    print("Loading Vocab", args.vocab_path)
-    vocab = WordPieceVocab.load_vocab(args.vocab_path)
+    print("Loading Vocab", conf.corpus.vocab_path)
+    vocab = WordPieceVocab()
+    vocab.load(conf.corpus.vocab_path)
     print("Vocab Size: ", len(vocab))
 
-    if args.context:
-        print("Loading Context", args.context_path)
-        context_dict = ContextVocab.load_vocab(args.context_path)
-        print("Context Size: ", len(context_dict))
+    if conf.context.context_flag:
+        print("Loading Context", conf.context.context_path)
+        context_vocab = Vocab().load(conf.context.context_path)
+        print("Context Size: ", len(context_vocab))
     else:
-        context_dict = None
+        context_vocab = None
 
-    print("Loading Train Dataset", args.train_dataset)
-    train_dataset = MultifileDataset(args.train_dataset, 
+    print("Loading Train Dataset", conf.corpus.train_dataset)
+    train_dataset = MultifileDataset(conf.corpus.train_dataset, 
                                     vocab, 
-                                    max_seq_len     =args.max_seq_len, 
-                                    min_seq_len     =args.min_seq_len,
-                                    max_tokens_len  =args.token_len,
-                                    max_word_len    =   50,
-                                    corpus_lines    =args.corpus_line,
-                                    context         =args.context, 
-                                    context_vocab   = context_dict)
+                                    max_seq_len     =conf.corpus.max_seq_len, 
+                                    min_seq_len     =conf.corpus.min_seq_len,
+                                    max_tokens_len  =conf.corpus.token_len,
+                                    max_word_len    =conf.corpus.max_word_len,
+                                    corpus_lines    =conf.corpus.train_corpus_lines,
+                                    context         =conf.context.context_flag, 
+                                    context_vocab   =context_vocab)
 
-    print("Loading Test Dataset", args.test_dataset)
-    test_dataset = MultifileDataset(args.test_dataset, 
+    print("Loading Test Dataset", conf.corpus.test_dataset)
+    test_dataset = MultifileDataset(conf.corpus.test_dataset, 
                                     vocab, 
-                                    max_seq_len     =args.max_seq_len, 
-                                    min_seq_len     =args.min_seq_len,
-                                    max_tokens_len  =args.token_len,
-                                    corpus_lines    =args.corpus_line,
-                                    context         =args.context, 
-                                    context_vocab   = context_dict)
+                                    max_seq_len     =conf.corpus.max_seq_len, 
+                                    min_seq_len     =conf.corpus.min_seq_len,
+                                    max_tokens_len  =conf.corpus.token_len,
+                                    max_word_len    =conf.corpus.max_word_len,
+                                    corpus_lines    =conf.corpus.test_corpus_lines,
+                                    context         =conf.context.context_flag, 
+                                    context_vocab   =context_vocab)
 
 
     print("Creating Dataloader")
-    train_data_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers)
-    test_data_loader = DataLoader(test_dataset, batch_size=args.batch_size, num_workers=args.num_workers) if test_dataset is not None else None
+    train_data_loader = DataLoader(train_dataset, 
+                                   batch_size   =conf.train.batch_size, 
+                                   num_workers  =conf.train.num_workers)
+    test_data_loader = DataLoader(test_dataset, 
+                                  batch_size    =conf.train.batch_size, 
+                                  num_workers   =conf.train.num_workers) if test_dataset is not None else None
 
-    if args.context:
+    if conf.context.context_flag:
         print("Building Context BERT model")
-        bert = ContextBERT(len(vocab), len(context_dict), hidden=args.hidden, n_layers=args.layers, attn_heads=args.attn_heads)
+        bert = ContextBERT(len(vocab), len(context_vocab), hidden=conf.model.hidden, n_layers=conf.model.layers, attn_heads=conf.model.attn_heads)
     else:
         print("Building BERT model")
-        bert = BERT(len(vocab), hidden=args.hidden, n_layers=args.layers, attn_heads=args.attn_heads)
+        bert = BERT(len(vocab), hidden=conf.model.hidden, n_layers=conf.model.layers, attn_heads=conf.model.attn_heads)
 
     print("Creating model Trainer")
-    trainer = BERTTrainer(bert, train_dataloader=train_data_loader, test_dataloader=test_data_loader,
-                            lr=args.lr, betas=(args.adam_beta1, args.adam_beta2), weight_decay=args.adam_weight_decay,
-                            with_cuda=args.with_cuda, cuda_devices=args.cuda_devices, log_freq=args.log_freq)
+    trainer = BERTTrainer(bert, 
+                          train_dataloader  =train_data_loader, 
+                          test_dataloader   =test_data_loader,
+                          lr                =conf.train.learning_rate, 
+                          betas             =(conf.train.adam_beta1, conf.train.adam_beta2), 
+                          weight_decay      =conf.train.adam_weight_decay,
+                          with_cuda         =conf.train.with_cuda, 
+                          cuda_devices      =conf.train.cuda_devices, 
+                          log_freq          =conf.train.log_freq)
 
     print("Training Start")
-    for epoch in range(args.epochs):
+    for epoch in range(conf.train.epochs):
         trainer.train(epoch)
-        trainer.save(epoch, args.output_path)
+        trainer.save(epoch, conf.train.output_path)
 
         if test_data_loader is not None:
             trainer.test(epoch)
