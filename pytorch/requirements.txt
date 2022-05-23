@@ -1,0 +1,23 @@
+certifi==2021.10.8
+cffi @ file:///home/conda/feedstock_root/build_artifacts/cffi_1636046050867/work
+charset-normalizer==2.0.12
+filelock==3.7.0
+huggingface-hub==0.6.0
+idna==3.3
+numpy @ file:///home/conda/feedstock_root/build_artifacts/numpy_1651020388975/work
+packaging==21.3
+pandas==1.4.2
+pycparser @ file:///home/conda/feedstock_root/build_artifacts/pycparser_1636257122734/work
+pyparsing==3.0.9
+python-dateutil @ file:///home/conda/feedstock_root/build_artifacts/python-dateutil_1626286286081/work
+pytz @ file:///home/conda/feedstock_root/build_artifacts/pytz_1647961439546/work
+PyYAML==6.0
+regex==2022.4.24
+requests==2.27.1
+six @ file:///home/conda/feedstock_root/build_artifacts/six_1620240208055/work
+tokenizers==0.12.1
+torch @ file:///home/conda/feedstock_root/build_artifacts/pytorch-recipe_1651023303145/work
+tqdm==4.64.0
+transformers==4.19.2
+typing_extensions @ file:///home/conda/feedstock_root/build_artifacts/typing_extensions_1650370875435/work
+urllib3==1.26.9
