@@ -1,3 +1,4 @@
+from regex import P
 import yaml
 import argparse
 from collections import namedtuple
@@ -99,9 +100,4 @@ def train():
 
 if __name__ == '__main__':
     train()
-
-    # python train.py -c /mnt/txt_base/files/ipa140710.json -v /home/luser/data/patent/model/vocab.pkl -o /home/luser/data/patent/model/bert.model
-    # python train.py -c /mnt/txt_base/files/ipa140710.json -v /home/luser/data/patent/model/vocab.pkl -o /home/luser/data/patent/model/bert.model --context -cp /home/luser/data/patent/model/context.pkl
-
-
-    
+  
