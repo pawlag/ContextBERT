@@ -1,0 +1,12 @@
+make dirs:
+
+	~/data/corpus_files_sample
+	~/data/model
+	
+copy files: 
+	to ~/data/model:
+		context_vb_fixed.pck  
+		wp_vocab_hybrid_freq10k_75k.json
+	to ~/data/corpus_files_sample:
+
+adjust configuraton in ContextBERT/pytorch/config/config.yaml 
