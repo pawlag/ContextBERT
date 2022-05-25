@@ -1,12 +1,15 @@
-make dirs:
+1. Make dirs:
 
 	~/data/corpus_files_sample
 	~/data/model
 	
-copy files: 
+2. Copy files: 
 	to ~/data/model:
 		context_vb_fixed.pck  
 		wp_vocab_hybrid_freq10k_75k.json
 	to ~/data/corpus_files_sample:
+		preprocesseed text files containg context and sequences  
 
-adjust configuraton in ContextBERT/pytorch/config/config.yaml 
+3. adjust configuraton in ContextBERT/pytorch/config/config.yaml 
+
+4. add ContextBERT dir to PYTHONPATH
