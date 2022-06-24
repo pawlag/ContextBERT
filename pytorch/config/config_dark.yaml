@@ -18,10 +18,10 @@ model:
     layers: 8
     attn_heads: 8
 train:
-    batch_size: 64
+    batch_size: 450
     epochs: 10
     num_workers: 1
-    with_cuda: false
+    with_cuda: true
     cuda_devices: null
     learning_rate: 0.001
     adam_weight_decay: 0.01
