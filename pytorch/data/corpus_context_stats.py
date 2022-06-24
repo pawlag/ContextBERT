@@ -1,6 +1,6 @@
 import pickle
 from collections import Counter
-from util.patent_loader import measure_files
+from patent.patent_loader import measure_files
 from vocab_wp_hybrid import WordPieceVocab
 from context_vocab import Vocab
 
