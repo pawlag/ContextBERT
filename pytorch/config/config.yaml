@@ -1,6 +1,5 @@
 corpus:
-    #train_dataset: /mnt/corpus_files_sample/
-    train_dataset: /home/ubuntu/data/patent/corpus_files_sample/
+    train_dataset: /mnt/corpus_files_sample/    
     test_dataset: null
     max_seq_len: 20
     min_seq_len: 3   
@@ -9,12 +8,10 @@ corpus:
     #train_corpus_lines: 5362975950
     train_corpus_lines: 4529557
     test_corpus_lines: null
-    #vocab_path: /home/luser/data/patent/model/wp_vocab_hybrid_freq10k_75k.json
-    vocab_path: /home/ubuntu/data/patent/model/wp_vocab_hybrid_freq10k_75k.json
+    vocab_path: /home/luser/data/patent/model/wp_vocab_hybrid_freq10k_75k.json    
 context:
     context_flag: true
-    #context_path: /home/luser/data/patent/model/context_vb_fixed.pck
-    context_path: /home/ubuntu/data/patent/model/context_vb_fixed.pck
+    context_path: /home/luser/data/patent/model/context_vb_fixed.pck    
 model:
     hidden: 256
     context_embedding_size: 128
@@ -30,6 +27,5 @@ train:
     adam_weight_decay: 0.01
     adam_beta1: 0.9
     adam_beta2: 0.999
-    log_freq: 10
-    #output_path: /home/luser/data/patent/model/
-    output_path: /home/ubuntu/data/patent/model/
+    log_freq: 10    
+    output_path: /home/luser/data/patent/model/

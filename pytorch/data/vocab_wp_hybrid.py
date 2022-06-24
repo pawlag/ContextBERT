@@ -6,7 +6,7 @@ from random import sample, shuffle, randrange
 from math import ceil
 import pandas as pd
 from collections import Counter 
-from util.patent_loader import load_documents_from_file, process_docs, get_list_of_files
+from patent.patent_loader import load_documents_from_file, process_docs, get_list_of_files
 
 class WordPieceVocab():
     """

@@ -8,8 +8,7 @@ from model.bert import BERT
 from model.contextual_bert import ContextBERT
 from model.trainer import BERTTrainer
 from data import MultifileDataset, WordPieceVocab
-from pytorch.data.context_vocab import Vocab
-
+from data.context_vocab import Vocab
 
 
 def to_nametuple(dict_data):

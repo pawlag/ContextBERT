@@ -1,7 +1,7 @@
 from torch.utils.data import Dataset
 import torch
 import random
-from util.patent_loader import load_documents_from_file, process_docs, measure_files, get_next_line_from_files
+from patent.patent_loader import load_documents_from_file, process_docs, measure_files, get_next_line_from_files
 
 
 class MultifileDataset(Dataset):

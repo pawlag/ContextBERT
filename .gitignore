@@ -171,3 +171,7 @@ fabric.properties
 
 # nohup output
 nohup.out
+
+
+# all txt files
+*.txt
