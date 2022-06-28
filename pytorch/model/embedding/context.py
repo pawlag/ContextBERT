@@ -8,7 +8,7 @@ class ContextEmbedding(nn.Module):
         
     """
 
-    def __init__(self, context_size, embed_size, dropout=0.1):
+    def __init__(self, context_size, dropout=0.1):
         """
         :param vocab_size: total vocab size
         :param embed_size: embedding size of token embedding

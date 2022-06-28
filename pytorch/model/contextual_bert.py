@@ -2,7 +2,8 @@ import torch.nn as nn
 
 from .transformer import  ContextTransformerBlock
 from .embedding import BERTEmbedding, ContextEmbedding
-from .utils import FeedForward
+from .encoding import ContextEncoding
+from .utils import FeedForward, ContextFeedForward
 
 
 class ContextBERT(nn.Module):
@@ -27,19 +28,26 @@ class ContextBERT(nn.Module):
         self.vocab_size = vocab_size
         self.context_size = context_size
 
-        # paper noted they used 4*hidden_size for ff_network_hidden_size
+        # BERT original set up is 4*hidden_size for ff_network_hidden_size
         self.feed_forward_hidden = hidden * 4
+
+        # Contex
         self.context_feed_forward_hidden = hidden * 2
 
         # embedding for BERT, sum of positional, token embeddings
         self.embedding = BERTEmbedding(vocab_size=vocab_size, embed_size=hidden)
 
         # embedding for context inputs (sequence-wise)
-        self.context_embedding = ContextEmbedding(context_size=context_size, embed_size=hidden)
+        #self.context_embedding = ContextEmbedding(context_size=context_size, embed_size=hidden)
+        self.context_encoding = ContextEncoding(context_size=context_size)
 
         # fnn for context
-        self.context_fnn = FeedForward(d_model=hidden, d_ff=self.context_feed_forward_hidden, dropout=dropout)
-        # multi-layers transformer blocks attendig to context state
+        self.context_fnn = ContextFeedForward(input_size=self.context_encoding.size, 
+                                              hidden_size=self.context_feed_forward_hidden, 
+                                              output_size = hidden, 
+                                              dropout=dropout)
+
+        # multi-layers transformer blocks attending to context state
         self.transformer_blocks = nn.ModuleList(
             [ContextTransformerBlock(hidden, attn_heads, self.feed_forward_hidden, dropout) for _ in range(n_layers)])
 
@@ -49,10 +57,10 @@ class ContextBERT(nn.Module):
         mask = (x > 0).unsqueeze(1).repeat(1, x.size(1), 1).unsqueeze(1)
 
         # embedding the indexed sequence to sequence of vectors
-        x = self.embedding(x)        
-        c = self.context_embedding(c)
+        x = self.embedding(x)                
+        c = self.context_encoding(c)
 
-        # context through fnn
+        # context through fnn 
         c = self.context_fnn(c)
 
         # running over multiple transformer blocks

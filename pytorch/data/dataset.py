@@ -18,14 +18,16 @@ class MultifileDataset(Dataset):
         self.corpus_path    = corpus_path
         
 
-        # count lines in corpus_lines == 0
+        # count lines if corpus_lines == 0
         if self.corpus_lines == 0:
             _, self.corpus_lines = measure_files(self.corpus_path, self.min_seq_len, self.max_seq_len, self.max_word_len)
             print(f"total number of lines: {self.corpus_lines}")
+        # create line generator
         self.line_generator = get_next_line_from_files(self.corpus_path, self.min_seq_len, self.max_seq_len, self.max_word_len)
 
     def __len__(self):
         return self.corpus_lines
+   
 
     def __getitem__(self, idx):
 

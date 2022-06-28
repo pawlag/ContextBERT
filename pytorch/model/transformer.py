@@ -34,7 +34,7 @@ class TransformerBlock(nn.Module):
 class ContextTransformerBlock(nn.Module):
     """
     Bidirectional Encoder = Transformer (self-attention)
-    Transformer = MultiHead_Attention + GS Attention for Conetxt + Feed_Forward with sublayer connection
+    Transformer = MultiHead_Attention + GS Attention for context + Feed_Forward with sublayer connection
     """
 
     def __init__(self, hidden, attn_heads, feed_forward_hidden, dropout):
@@ -57,6 +57,6 @@ class ContextTransformerBlock(nn.Module):
 
     def forward(self, x, c, mask):
         x = self.input_sublayer(x, lambda _x: self.self_attention.forward(_x, _x, _x, mask=mask))
-        x = self.context_sublayer(x, lambda _x: self.gs_attention.forward(_x, c, c, mask=mask))
+        x = self.context_sublayer(x, lambda _x: self.gs_attention.forward(_x, c, c, mask=mask))        
         x = self.output_sublayer(x, self.feed_forward)
         return self.dropout(x)

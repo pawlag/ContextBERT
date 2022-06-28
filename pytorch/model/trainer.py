@@ -14,8 +14,8 @@ class BERTTrainer:
     BERTTrainer makes the pretrained BERT or ContextBERT model for Masked LM training objective.
     """
 
-    def __init__(self, bert: Union[BERT, ContextBERT], 
-                 train_dataloader: DataLoader, test_dataloader: DataLoader = None,                 
+    def __init__(self, 
+                bert: Union[BERT, ContextBERT],                  
                  lr: float = 1e-4, betas=(0.9, 0.999), weight_decay: float = 0.01, warmup_steps=10000,
                  with_cuda: bool = False, cuda_devices=None, log_freq: int = 10):
         """
@@ -46,10 +46,6 @@ class BERTTrainer:
             print("Using %d GPUS for BERT" % torch.cuda.device_count())
             self.model = nn.DataParallel(self.model, device_ids=cuda_devices)
 
-        # Setting the train and test data loader
-        self.train_data = train_dataloader
-        self.test_data = test_dataloader
-
         # Setting the Adam optimizer with hyper-param
         self.optim = Adam(self.model.parameters(), lr=lr, betas=betas, weight_decay=weight_decay)
         self.optim_schedule = ScheduledOptim(self.optim, self.bert.hidden, n_warmup_steps=warmup_steps)
@@ -60,6 +56,12 @@ class BERTTrainer:
         self.log_freq = log_freq
 
         print("Total Parameters:", sum([p.nelement() for p in self.model.parameters()]))
+
+    def setup_dataloaders(self, train_dataloader: DataLoader, test_dataloader: DataLoader = None):
+        # Setting the train and test data loader
+        self.train_data = train_dataloader
+        self.test_data = test_dataloader
+
 
     def train(self, epoch):
         self.iteration(epoch, self.train_data)
@@ -92,7 +94,7 @@ class BERTTrainer:
             # 0. batch_data will be sent into the device(GPU or cpu)
             data = {key: value.to(self.device) for key, value in data.items()}
 
-            # 1. forward the next_sentence_prediction and masked_lm model
+            # 1. forward  masked_lm model
             if self.model.context_aware:
                 mask_lm_output = self.model.forward(data["bert_input"], data["bert_context"])
             else:
@@ -131,10 +133,11 @@ class BERTTrainer:
         :param file_path: model output path which gonna be file_path+"ep%d" % epoch
         :return: final_output_path
         """
-        output_path = file_path + ".ep%d" % epoch
+        output_path = file_path + f".ep{epoch}"
         torch.save(self.bert.cpu(), output_path)
         self.bert.to(self.device)
-        print("EP:%d Model Saved on:" % epoch, output_path)
+        print(f"EP:{epoch} Model Saved on: {output_path}")
+
         return output_path
 
 

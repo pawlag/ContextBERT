@@ -6,7 +6,7 @@ corpus:
     max_word_len: 50
     token_len: 25
     #train_corpus_lines: 5362975950
-    train_corpus_lines: 4529557
+    train_corpus_lines: 407807
     test_corpus_lines: null    
     vocab_path: /mnt/fastd/patents/model/wp_vocab_hybrid_freq10k_75k.json
 context:
@@ -28,4 +28,4 @@ train:
     adam_beta1: 0.9
     adam_beta2: 0.999
     log_freq: 10    
-    output_path: /mnt/fastd/patents/model/
+    output_path: /mnt/fastd/patents/model/model
