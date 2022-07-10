@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader
+import torchmetrics
 
 from . import BERTLM, BERT, ContextBERT
 from .optim_schedule import ScheduledOptim
@@ -53,6 +54,8 @@ class BERTTrainer:
         # Using Negative Log Likelihood Loss function for predicting the masked_token
         self.criterion = nn.NLLLoss(ignore_index=0)
 
+        self.metric = torchmetrics.Accuracy(top_k=50, ignore_index=0, mdmc_average='global').to(self.device)
+
         self.log_freq = log_freq
 
         print("Total Parameters:", sum([p.nelement() for p in self.model.parameters()]))
@@ -89,6 +92,7 @@ class BERTTrainer:
                               bar_format="{l_bar}{r_bar}")
 
         avg_loss = 0.0
+        self.metric.reset()        
 
         for i, data in data_iter:
             # 0. batch_data will be sent into the device(GPU or cpu)
@@ -100,8 +104,13 @@ class BERTTrainer:
             else:
                 mask_lm_output = self.model.forward(data["bert_input"])
 
-            # 2-2. NLLLoss of predicting masked token word
-            loss = self.criterion(mask_lm_output.transpose(1, 2), data["bert_label"])                        
+            # 2. NLLLoss of predicting masked token word
+            preds = mask_lm_output.transpose(1, 2)
+            target = data["bert_label"]
+            loss = self.criterion(preds, target)
+            avg_loss += loss.item()          
+
+            acc = self.metric(preds, target)
 
             # 3. backward and optimization only in train
             if train:
@@ -109,18 +118,15 @@ class BERTTrainer:
                 loss.backward()
                 self.optim_schedule.step_and_update_lr()
 
-            # next sentence prediction accuracy
-            
-            avg_loss += loss.item()          
-
-            post_fix = {
-                "epoch": epoch,
-                "iter": i,
-                "avg_loss": avg_loss / (i + 1),
-                "loss": loss.item()
-            }
-
             if i % self.log_freq == 0:
+                post_fix = {
+                    "epoch": epoch,
+                    "iter": i,
+                    "avg_loss": avg_loss / (i + 1),
+                    "loss": loss.item(),
+                    "accuracy":acc,
+                    "total_acc":self.metric.compute()
+                }
                 data_iter.write(str(post_fix))
 
         print("EP%d_%s, avg_loss=" % (epoch, str_code), avg_loss / len(data_iter))
@@ -139,6 +145,5 @@ class BERTTrainer:
         print(f"EP:{epoch} Model Saved on: {output_path}")
 
         return output_path
-
 
 
