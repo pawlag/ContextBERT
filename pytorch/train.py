@@ -97,11 +97,11 @@ def train():
 
         trainer.setup_dataloaders(train_data_loader, test_data_loader)
 
-        trainer.train(epoch)
+        trainer.train(epoch, conf.train.log_path)
         trainer.save(epoch, conf.train.output_path)
 
         if test_data_loader is not None:
-            trainer.test(epoch)
+            trainer.test(epoch, conf.train.log_path)
 
 if __name__ == '__main__':
     train()

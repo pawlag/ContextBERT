@@ -8,7 +8,7 @@ from . import BERTLM, BERT, ContextBERT
 from .optim_schedule import ScheduledOptim
 import tqdm
 from typing import Union
-
+from os.path import join
 
 class BERTTrainer:
     """
@@ -66,13 +66,13 @@ class BERTTrainer:
         self.test_data = test_dataloader
 
 
-    def train(self, epoch):
-        self.iteration(epoch, self.train_data)
+    def train(self, epoch, log_path):
+        self.iteration(epoch, self.train_data, log_path)
 
-    def test(self, epoch):
-        self.iteration(epoch, self.test_data, train=False)
+    def test(self, epoch, log_path):
+        self.iteration(epoch, self.test_data, log_path, train=False)
 
-    def iteration(self, epoch, data_loader, train=True):
+    def iteration(self, epoch, data_loader, log_path = "output/", train=True):
         """
         loop over the data_loader for training or testing
         if on train status, backward operation is activated
@@ -81,6 +81,7 @@ class BERTTrainer:
         :param epoch: current epoch index
         :param data_loader: torch.utils.data.DataLoader for iteration
         :param train: boolean value of is train or test
+        :param log_path: folder in which log files should be placed 
         :return: None
         """
         str_code = "train" if train else "test"
@@ -92,8 +93,11 @@ class BERTTrainer:
                               bar_format="{l_bar}{r_bar}")
 
         avg_loss = 0.0
+        avg_acc = 0.0
         self.metric.reset()        
-
+        # log file 
+        logf = open(join(log_path, f"log_{str_code}_{epoch}.txt"),"w")
+        logf.write("epoch\titer\tloss\tavg_loss\taccuracy\tavg_accuracy\n")
         for i, data in data_iter:
             # 0. batch_data will be sent into the device(GPU or cpu)
             data = {key: value.to(self.device) for key, value in data.items()}
@@ -108,9 +112,9 @@ class BERTTrainer:
             preds = mask_lm_output.transpose(1, 2)
             target = data["bert_label"]
             loss = self.criterion(preds, target)
-            avg_loss += loss.item()          
-
-            acc = self.metric(preds, target)
+            avg_loss += loss.item()
+            acc = self.metric(preds, target).item()
+            avg_acc += acc
 
             # 3. backward and optimization only in train
             if train:
@@ -118,18 +122,30 @@ class BERTTrainer:
                 loss.backward()
                 self.optim_schedule.step_and_update_lr()
 
-            if i % self.log_freq == 0:
+            if i % self.log_freq == 0:                
                 post_fix = {
                     "epoch": epoch,
-                    "iter": i,
-                    "avg_loss": avg_loss / (i + 1),
+                    "iter": i,                    
                     "loss": loss.item(),
-                    "accuracy":acc,
-                    "total_acc":self.metric.compute()
+                    "avg_loss": avg_loss / (i + 1),
+                    "accuracy": acc,
+                    "avg_accuracy": avg_acc/(i + 1)
                 }
                 data_iter.write(str(post_fix))
+                # log iter result
+                logf.write(f"{epoch}\t{i}\t{loss.item()}\t{avg_loss/(i + 1)}\t{acc}\t{avg_acc/(i + 1)}\n")
+        
+        print("EP%d_%s, avg_loss=" % (epoch, str_code), avg_loss / (i + 1))
+        logf.close()
 
-        print("EP%d_%s, avg_loss=" % (epoch, str_code), avg_loss / len(data_iter))
+        # log epoch result 
+        logf = open(join(log_path, f"log_{str_code}.txt"),"w" if epoch ==0 else "r")
+        if epoch ==0:
+            logf.write(f"epoch\tavg_loss\tavg_accuracy\n")    
+        
+        logf.write(f"{epoch}\t{avg_loss/(i + 1)}\t{avg_acc/(i + 1)}\n")
+        logf.close()
+        
 
     def save(self, epoch, file_path="output/bert_trained.model"):
         """
@@ -145,5 +161,3 @@ class BERTTrainer:
         print(f"EP:{epoch} Model Saved on: {output_path}")
 
         return output_path
-
-
